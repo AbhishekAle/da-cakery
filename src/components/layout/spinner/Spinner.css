@@ -1,0 +1,26 @@
+.spinner {
+  width: 2rem; /* Increased size */
+  height: 2rem; /* Increased size */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.spinner > div {
+  width: 70%; /* Increased size */
+  height: 70%; /* Increased size */
+  border: 4px solid rgba(255, 255, 255, 0.25); /* White with reduced opacity */
+  border-top-color: rgba(255, 255, 255, 0.8); /* White with higher opacity */
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

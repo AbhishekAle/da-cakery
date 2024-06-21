@@ -1,0 +1,13 @@
+@font-face {
+  font-family: "Tomatoes";
+  src: url("./path/to/font/Tomatoes-Regular.ttf") format("truetype");
+}
+* {
+  margin: 0%;
+  padding: 0%;
+  box-sizing: border-box;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

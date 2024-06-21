@@ -1,0 +1,1779 @@
+import React, { useEffect, useState } from "react";
+import DetailsBanner from "../DetailsBanner";
+import Details from "../../../assets/images/MeowCat.jpg";
+import { toast } from "react-toastify";
+import PaymentPage from "../../paymentPage/PaymentPage";
+import SubHeader from "../../../components/header/subHeader/SubHeader";
+import MetaData from "../../metaData/MetaData";
+import ReactStars from "react-rating-stars-component";
+import { useNavigate, useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  clearError,
+  productsDetails,
+} from "../../../redux/features/productSlice";
+import Loader from "../../../components/layout/loader/Loader";
+import { ItemsAddedCart, clearErr } from "../../../redux/features/cartSlice";
+
+const ProductDetails = () => {
+  const { user } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
+  const { progressing, err } = useSelector((state) => state.cart);
+  const userName = user?.name;
+
+  const { loading, error, product } = useSelector((state) => state.product);
+
+  const dispatch = useDispatch();
+  const { prod_slug } = useParams();
+  const [isHovered, setIsHovered] = useState(false);
+  const [showDetails, setShowDetails] = useState(true);
+  const [showDelivery, setShowDelivery] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
+
+  const [quantity, setQuantity] = useState(1);
+
+  const options1 = {
+    edit: false,
+    color: "rgba(20, 20, 20, 0.1)",
+    activeColor: "#ffd707",
+    size: window.innerWidth < 600 ? 12 : 16, // Decreased size values
+    isHalf: true,
+    value: product?.rating,
+  };
+
+  useEffect(() => {
+    if (err) {
+      dispatch(clearErr());
+      toast.error(err);
+    }
+  }, [dispatch, err]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(clearError);
+    }
+  }, [dispatch, error]);
+  useEffect(() => {
+    dispatch(productsDetails(prod_slug));
+  }, [prod_slug]);
+
+  const increaseQuantity = () => {
+    if (product.isInstock <= quantity) return;
+    const qty = quantity + 1;
+    setQuantity(qty);
+  };
+
+  const decreaseQuantity = () => {
+    if (1 >= quantity) return;
+    const qty = quantity - 1;
+    setQuantity(qty);
+  };
+
+  const handleToggleDetails = () => {
+    setShowDetails(!showDetails);
+    setShowDelivery(false);
+    setShowInstructions(false);
+  };
+
+  const handleShowInstructions = () => {
+    setShowInstructions(!showInstructions);
+    setShowDetails(false);
+    setShowDelivery(false);
+  };
+
+  const handleShowDelivery = () => {
+    setShowDelivery(!showDelivery);
+    setShowDetails(false);
+    setShowInstructions(false);
+  };
+
+  //for object only send
+  // const handleAddCart = (product) => {
+  //   if (userId) {
+  //     const productId = product.id;
+  //     dispatch(ItemsAddedCart({ productId, quantity, toast }));
+  //   } else {
+  //     toast.error("please login at first!");
+  //   }
+  // };
+
+  //for array send
+  const handleAddCart = (product) => {
+    if (userName) {
+      const data = {
+        customer: userName,
+        items: [
+          {
+            product: product.id,
+            quantity: quantity,
+          },
+        ],
+      };
+      dispatch(ItemsAddedCart({ data, toast, dispatch }));
+    } else {
+      toast.error("Please login first!");
+      navigate("/login");
+    }
+  };
+
+  return (
+    <>
+      <MetaData title="product details" />
+      <DetailsBanner />
+      <SubHeader />
+      {loading ? (
+        <Loader />
+      ) : (
+        <>
+          <div className="font-sans container mx-auto px-8 py-8 bg-gray-50">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="mb-4 bg-[#FFFFFF] border flex justify-center items-center">
+                {/* Left Side Image */}
+                <div
+                  className="relative max-w-md mx-auto overflow-hidden"
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                >
+                  <img
+                    src={product?.product_url}
+                    alt="Product"
+                    className={`w-full h-auto rounded object-cover cursor-pointer transition-transform duration-300 ${
+                      isHovered ? "scale-150" : "scale-100"
+                    }`}
+                  />
+                  <div className="absolute inset-0 hidden md:flex justify-center items-center bg-black bg-opacity-10 rounded-md cursor-zoom-in">
+                    {/* Use the same image source for the enlarged version */}
+                    <img
+                      src={product.product_url}
+                      alt="Product"
+                      className={`w-full h-auto rounded-md ${
+                        isHovered ? "scale-2" : "scale-0"
+                      }`}
+                      style={{
+                        transformOrigin: "center",
+                        transform: isHovered ? "scale(2)" : "scale(0)",
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="px-4">
+                <div>
+                  {/* Right Side Content */}
+                  <h2 className="text-2xl font-bold text-gray-700 mb-2">
+                    {product?.product_name}
+                  </h2>
+                  <div className="flex items-center mb-2">
+                    <div className="mr-2">
+                      {/* Ratings */}
+                      <span className="text-yellow-500">
+                        <ReactStars {...options1} />
+                      </span>
+                    </div>
+                    <div>
+                      {/* Reviews */}
+                      <span className="text-gray-600">
+                        {product?.product_views}( Customer Reviews)
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mb-4">
+                    {/* Price */}
+                    <span className="text-3xl text-red-500 font-semibold">
+                      Rs.{product?.price}
+                    </span>
+                    <hr className="border-b border-dotted w-3/5 border-gray-400 mt-2" />
+                  </div>
+                  {/* isInStock */}
+                  {product && (
+                    <p
+                      className={
+                        product.isInstock
+                          ? "text-green-500 font-semibold"
+                          : "text-red-500 font-semibold"
+                      }
+                    >
+                      {product.isInstock ? "In Stock" : "Out of Stock"}
+                    </p>
+                  )}
+                  {/* Quantity Control */}
+                  <div className="flex items-center mt-3 text-gray-700">
+                    <span className="mr-2">Qty:</span>
+                    <div className="flex">
+                      <button
+                        className="px-2 py-1 bg-gray-200 rounded-l"
+                        onClick={decreaseQuantity}
+                      >
+                        -
+                      </button>
+                      <input
+                        type="text"
+                        className="w-12 px-2 py-1 text-center focus:outline-none bg-gray-100"
+                        value={quantity}
+                        onChange={(e) => setQuantity(parseInt(e.target.value))}
+                        min={1}
+                      />
+                      <button
+                        className="px-2 py-1 bg-gray-200 rounded-r"
+                        onClick={increaseQuantity}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    {/* Choose Weight */}
+                    <p className="font-semibold text-gray-700 my-2">
+                      Choose Weight (in pounds)
+                    </p>
+                    <div className="flex items-center">
+                      <label
+                        htmlFor="weight1"
+                        className="flex items-center mr-4"
+                      >
+                        <input
+                          type="checkbox"
+                          id="weight1"
+                          className="mr-2 h-4 w-4"
+                        />
+                        <span>1lb</span>
+                      </label>
+                      <label
+                        htmlFor="weight2"
+                        className="flex items-center mr-4"
+                      >
+                        <input
+                          type="checkbox"
+                          id="weight2"
+                          className="mr-2 h-4 w-4"
+                        />
+                        <span>2lb</span>
+                      </label>
+                      <label
+                        htmlFor="weight3"
+                        className="flex items-center mr-4"
+                      >
+                        <input
+                          type="checkbox"
+                          id="weight3"
+                          className="mr-2 h-4 w-4"
+                        />
+                        <span>3lb</span>
+                      </label>
+                      <label htmlFor="weight4" className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="weight4"
+                          className="mr-2 h-4 w-4"
+                        />
+                        <span>4lb</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div className="mb-4">
+                    {/* Special Requests */}
+                    <p className="font-semibold text-gray-700 my-1">
+                      Special Requests:
+                    </p>
+                    <div>
+                      <div className="flex items-center mb-2">
+                        <input
+                          type="checkbox"
+                          id="eggless"
+                          className="mr-1 h-4 w-4"
+                        />
+                        <label htmlFor="eggless" className="mr-4">
+                          Eggless [+Rs.150.0]
+                        </label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="sugarless"
+                          className="mr-1 h-4 w-4"
+                        />
+                        <label htmlFor="sugarless">Sugarless [+Rs.100.0]</label>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mb-4">
+                    {/* Select Flavor */}
+                    <label
+                      htmlFor="flavor"
+                      className="font-semibold text-gray-700 mb-2 block"
+                    >
+                      Select Flavor:
+                    </label>
+                    <div className="flex">
+                      <select
+                        id="flavor"
+                        className="w-64 border focus:outline-none rounded py-2 px-3"
+                      >
+                        <option value="chocolate">Select flavour</option>
+                        <option value="chocolate">Chocolate</option>
+                        <option value="vanilla">Vanilla</option>
+                        <option value="strawberry">Strawberry</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mb-4 flex space-x-2">
+                    {/* Buttons */}
+                    <button
+                      className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-64"
+                      disabled={product?.isInstock < 1 ? true : false}
+                      onClick={() => handleAddCart(product)}
+                    >
+                      {progressing && <Loader />}Add to Cart
+                    </button>
+                    <button className="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded w-64">
+                      Buy Now
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mb-4 bg-gray-50 border flex flex-col">
+              <div className="flex flex-wrap">
+                <h2
+                  className={`py-2 px-2 font-semibold hover:text-red-500 cursor-pointer bg-accordion my-2 ${
+                    showDetails ? "underline text-red-500" : ""
+                  }`}
+                  onClick={handleToggleDetails}
+                >
+                  Product Details
+                </h2>
+                <h2
+                  className={`text-gray-700 hover:text-red-500 font-semibold cursor-pointer py-2 px-2 mr-4 my-2 ${
+                    showDelivery ? "underline text-red-500" : ""
+                  }`}
+                  onClick={handleShowDelivery}
+                >
+                  Delivery Information
+                </h2>
+                <h2
+                  className={`text-gray-700 py-2 hover:text-red-500 cursor-pointer font-semibold my-2 ${
+                    showInstructions ? "underline text-red-500" : ""
+                  }`}
+                  onClick={handleShowInstructions}
+                >
+                  Instructions
+                </h2>
+              </div>
+
+              {showDetails && (
+                <ul className="list-disc w-full sm:w-3/5 bg-[#FFFFFF] pl-6 mt-2">
+                  {product?.description}
+                </ul>
+              )}
+
+              {showDelivery && (
+                <ul className="list-disc w-full sm:w-3/5 bg-[#FFFFFF] pl-6 mt-2">
+                  <li className="text-gray-700">
+                    Every cake we offer is handcrafted and since each bakery has
+                    its own way of baking and designing a cake, there might be
+                    slight variation in the product in terms of design and
+                    shape.
+                  </li>
+                  <li className="text-gray-700">
+                    The chosen delivery time is an estimate and depends on the
+                    availability of the product and the destination to which you
+                    want the product to be delivered.
+                  </li>
+                  <li className="text-gray-700">
+                    Since cakes are perishable in nature, we attempt delivery of
+                    your order only once. The delivery cannot be redirected to
+                    any other address.
+                  </li>
+                  <li className="text-gray-700">
+                    This product is hand-delivered and will not be delivered
+                    along with courier products.
+                  </li>
+                  <li className="text-gray-700">
+                    Occasionally, substitutions of flavors/designs are necessary
+                    due to temporary unavailability issues.
+                  </li>
+                  <li className="text-gray-700">
+                    Delivery available at Kathmandu, Lalitpur, and Bhaktapur.
+                  </li>
+                </ul>
+              )}
+
+              {showInstructions && (
+                <ul className="list-disc w-full sm:w-3/5 bg-[#FFFFFF] pl-6 mt-2">
+                  <li className="text-gray-700">
+                    Store cream cakes in a refrigerator. Fondant cakes should be
+                    stored in an air-conditioned environment.
+                  </li>
+                  <li className="text-gray-700">
+                    Slice and serve the cake at room temperature and make sure
+                    it is not exposed to heat.
+                  </li>
+                  <li className="text-gray-700">
+                    Use a serrated knife to cut a fondant cake
+                  </li>
+                  <li className="text-gray-700">
+                    Sculptural elements and figurines may contain wire supports
+                    or toothpicks or wooden skewers for support.
+                  </li>
+                  <li className="text-gray-700">
+                    Please check the placement of these items before serving to
+                    small children.
+                  </li>
+                  <li className="text-gray-700">
+                    The cake should be consumed within 24 hours.
+                  </li>
+                  <li className="text-gray-700">Enjoy your cake!</li>
+                </ul>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+      <div className="mt-8">
+        <PaymentPage />
+      </div>
+    </>
+  );
+};
+
+export default ProductDetails;
+
+
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import * as api from "../apiRoute/api";
+
+//get all items cart
+export const getItemsCart = createAsyncThunk(
+  "/cart/items",
+  async (__, { rejectWithValue }) => {
+    try {
+      const response = await api.getCartItems();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+
+//add items into cart
+export const ItemsAddedCart = createAsyncThunk(
+  "/add/cart",
+  async ({ data, toast }, { rejectWithValue, dispatch }) => {
+    try {
+      const response = await api.addCartItems(data);
+      toast.success(response.data.message || "items added to cart!");
+      // Dispatch getItemsCart() to fetch updated cart items
+      dispatch(getItemsCart());
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+
+//delete cartItems
+export const ItemsDeleteCart = createAsyncThunk(
+  "/delete/cart",
+  async ({ id, toast }, { rejectWithValue, dispatch }) => {
+    try {
+      const response = await api.deleteCartItems(id);
+      toast.success(response.data.message || "items remove successFully!");
+      // Dispatch getItemsCart() to fetch updated cart items
+      dispatch(getItemsCart());
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+
+const cartSlice = createSlice({
+  name: "cart",
+  initialState: {
+    progressing: false,
+    err: "",
+    msg: "",
+    cartItems: [],
+    items: [],
+    shippingInfo: null,
+  },
+  reducers: {
+    clearErr: (state) => {
+      state.err = null;
+    },
+
+    incrementItem(state, action) {
+      const { prod_slug } = action.payload;
+
+      const cartIndex = state.cartItems.findIndex((cart) =>
+        cart.items.some((item) => item.prod_slug === prod_slug)
+      );
+
+      if (cartIndex >= 0) {
+        const cartItem = state.cartItems[cartIndex];
+        const productIndex = cartItem.items.findIndex(
+          (item) => item.prod_slug === prod_slug
+        );
+
+        if (productIndex >= 0) {
+          cartItem.items[productIndex].quantity++;
+        }
+      }
+    },
+
+    decrementItem(state, action) {
+      const { prod_slug } = action.payload;
+      const cartIndex = state.cartItems.findIndex((cart) =>
+        cart.items.some((item) => item.prod_slug === prod_slug)
+      );
+
+      if (cartIndex >= 0) {
+        const cartItem = state.cartItems[cartIndex];
+        const productIndex = cartItem.items.findIndex(
+          (item) => item.prod_slug === prod_slug
+        );
+
+        if (productIndex >= 0 && cartItem.items[productIndex].quantity > 1) {
+          cartItem.items[productIndex].quantity--;
+        }
+      }
+    },
+
+    addShippingInfo(state, action) {
+      state.shippingInfo = action.payload;
+      localStorage.setItem("shippingInfo", JSON.stringify(action.payload));
+    },
+  },
+
+  extraReducers: (builder) => {
+    builder
+      .addCase(getItemsCart.pending, (state) => {
+        state.progressing = true;
+      })
+      .addCase(getItemsCart.fulfilled, (state, action) => {
+        state.progressing = false;
+        state.cartItems = action.payload.data;
+      })
+      .addCase(getItemsCart.rejected, (state, action) => {
+        state.progressing = false;
+        state.err = action.payload.msg;
+      })
+      .addCase(ItemsAddedCart.pending, (state) => {
+        state.progressing = true;
+      })
+      .addCase(ItemsAddedCart.fulfilled, (state, action) => {
+        state.progressing = false;
+        state.items = action.payload;
+      })
+      .addCase(ItemsAddedCart.rejected, (state, action) => {
+        state.progressing = false;
+        state.err = action.payload.msg;
+      })
+      .addCase(ItemsDeleteCart.pending, (state) => {
+        state.progressing = true;
+      })
+      .addCase(ItemsDeleteCart.fulfilled, (state, action) => {
+        state.progressing = false;
+
+        const {
+          arg: { id },
+        } = action.meta;
+        if (id) {
+          // Find the cart that contains the item with the given id
+          const cartIndex = state.cartItems.findIndex((cart) =>
+            cart.items.some((item) => item.id === id)
+          );
+
+          if (cartIndex !== -1) {
+            // Filter out the deleted item from the items array of the cart
+            state.cartItems[cartIndex].items = state.cartItems[
+              cartIndex
+            ].items.filter((item) => item.id !== id);
+          }
+        }
+      })
+      .addCase(ItemsDeleteCart.rejected, (state, action) => {
+        state.progressing = false;
+        state.err = action.payload.msg;
+      });
+  },
+});
+
+export const { clearErr, decrementItem, incrementItem, addShippingInfo } =
+  cartSlice.actions;
+
+export default cartSlice.reducer;
+
+
+import React, { useEffect } from "react";
+import "./ConfirmOrder.css";
+import MetaData from "../metaData/MetaData";
+import SubHeader from "../../components/header/subHeader/SubHeader";
+import { useDispatch, useSelector } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
+import CheckOutSteps from "../../components/checkOutSteps/CheckOutSteps";
+import { getItemsCart } from "../../redux/features/cartSlice";
+import { toast } from "react-toastify";
+import {
+  allShippingDetails,
+  clearError,
+} from "../../redux/features/orderSlice";
+import Loader from "../../components/layout/loader/Loader";
+
+const ConfirmOrder = () => {
+  const { shippingInfo, cartItems } = useSelector((state) => state.cart);
+  const { shippings, loading, error } = useSelector((state) => state.order);
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const proceedToPayment = () => {
+    const data = {
+      subTotal,
+      shippingCharges,
+      tax,
+      totalPrice,
+    };
+    sessionStorage.setItem("orderInfo", JSON.stringify(data));
+    navigate("/payment");
+  };
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(clearError());
+    }
+    dispatch(allShippingDetails());
+  }, [dispatch, error]);
+
+  useEffect(() => {
+    dispatch(getItemsCart());
+  }, [dispatch]);
+
+  const subTotal =
+    cartItems && Array.isArray(cartItems)
+      ? cartItems
+          .flatMap((cart) =>
+            cart.items?.map(
+              (item) => Number(item.product.price) * Number(item.quantity)
+            )
+          )
+          .reduce((acc, cost) => acc + cost, 0)
+      : 0;
+
+  //   const shippingCharges = subtotal > 1000 ? 0 : 200;
+  const shippingCharges = 100;
+
+  const tax = subTotal * 0.18;
+
+  const totalPrice = subTotal + tax + shippingCharges;
+
+  // const address = `${shippingInfo.address},${shippingInfo.city},${shippingInfo.state},${shippingInfo.pinCode},${shippingInfo.country}`;
+  return (
+    <>
+      <MetaData title="confirm order" />
+      <SubHeader />
+      <CheckOutSteps activeStep={1} />
+
+      <div className="confirmOrderPage">
+        <div>
+          <div className="confirmShippingArea">
+            <span className="text-gray-600 font-bold">Shipping Info</span>
+            {loading ? (
+              <Loader />
+            ) : (
+              <>
+                {shippings &&
+                  shippings.map((shipping, index) => (
+                    <div key={shipping.id} className="confirmShippingAreaBox">
+                      <div>
+                        <p>Name:</p>
+                        <span>{shipping?.fullName}</span>
+                      </div>
+                      <div>
+                        <p>Contact:</p>
+                        <span>
+                          {shipping.phoneNo},{shipping.altPhoneNo}
+                        </span>
+                      </div>
+                      <div>
+                        <p>Alias:</p>
+                        <span>{shipping.alies}</span>
+                      </div>
+                      <div>
+                        <p>Address:</p>
+                        <span>
+                          {shipping.location}, {shipping.district},
+                          {shipping.landMark}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+              </>
+            )}
+          </div>
+          <div className="confirmCartItems">
+            <span className="text-gray-600 font-bold">Your Cart Items:</span>
+            <div className="confirmCartItemsContainer">
+              {cartItems && cartItems.length > 0 ? (
+                cartItems.flatMap((cart) =>
+                  cart.items.map((item) => (
+                    <div key={item.id}>
+                      <img src={item.product.product_url} alt="Product" />
+                      <Link to={`/product/details/${item.product.prod_slug}`}>
+                        {item.product.product_name}
+                      </Link>
+                      <span>
+                        {item.quantity} X Rs.{item.product.price} =
+                        <b>Rs.{item.product.price * item.quantity}</b>
+                      </span>
+                    </div>
+                  ))
+                )
+              ) : (
+                <>
+                  <h1 className="text-center">No Data found</h1>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        {/*  */}
+        <div>
+          <div className="orderSummary">
+            <span className="text-gray-600 font-bold">Order Summery</span>
+            <div>
+              <div>
+                <p>Subtotal:</p>
+                <span>Rs.{subTotal}</span>
+              </div>
+              <div>
+                <p>Shipping Charges:</p>
+                <span>Rs.{shippingCharges}</span>
+              </div>
+              <div>
+                <p>GST:</p>
+                <span>Rs.{tax}</span>
+              </div>
+            </div>
+
+            <div className="orderSummaryTotal">
+              <p>
+                <b>Total:</b>
+              </p>
+              <span className="text-gray-600 font-bold">Rs.{totalPrice}</span>
+            </div>
+
+            <button onClick={proceedToPayment}>Proceed To Payment</button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default ConfirmOrder;
+
+
+import React, { useEffect, useState } from "react";
+import { FaTrash, FaHeart, FaShoppingBasket } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
+import MetaData from "../metaData/MetaData";
+import SubHeader from "../../components/header/subHeader/SubHeader";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  ItemsDeleteCart,
+  clearErr,
+  decrementItem,
+  getItemsCart,
+  incrementItem,
+} from "../../redux/features/cartSlice";
+import { toast } from "react-toastify";
+import Loader from "../../components/layout/loader/Loader";
+
+const CartDetails = () => {
+  const { user } = useSelector((state) => state.auth);
+  const userId = user?.id;
+  const { cartItems, err, progressing } = useSelector((state) => state.cart);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const handleIncrement = (productSlug) => {
+    // console.log("Received productSlug:", productSlug);
+    // console.log("cartItems:", cartItems);
+
+    const product = cartItems
+      .flatMap((cart) => cart.items) // Flatten the items array
+      .find((item) => item.product.prod_slug === productSlug);
+
+    // console.log("product:", product);
+
+    if (product && product.product.isInstock > product.quantity) {
+      dispatch(incrementItem(productSlug));
+    } else {
+      toast.warning("Product is out of stock or quantity limit reached");
+    }
+  };
+
+  const handleDecrement = (productSlug) => {
+    dispatch(decrementItem(productSlug));
+  };
+
+  const handleRemoveItem = (id) => {
+    dispatch(ItemsDeleteCart({ id, toast }));
+  };
+
+  const checkOutHandler = () => {
+    if (!user) {
+      navigate("/login?redirect=/shipping");
+    } else if (user.id !== userId) {
+      toast.error("Sorry, you are not authorized to proceed!");
+    } else {
+      navigate("/shipping/details");
+    }
+  };
+
+  const subTotal =
+    cartItems && Array.isArray(cartItems)
+      ? cartItems
+          .flatMap((cart) =>
+            cart.items?.map(
+              (item) => Number(item.product.price) * Number(item.quantity)
+            )
+          )
+          .reduce((acc, cost) => acc + cost, 0)
+      : 0;
+
+  const deliveryCharge = 100;
+  const total = subTotal + deliveryCharge;
+
+  useEffect(() => {
+    if (err) {
+      toast.error(err);
+      dispatch(clearErr());
+    }
+    dispatch(getItemsCart());
+  }, [dispatch, err]);
+
+  return (
+    <>
+      <MetaData title="view cart" />
+      <SubHeader />
+      {progressing ? (
+        <Loader />
+      ) : (
+        <>
+          <div className="flex px-4 py-4 flex-col bg-gray-50 md:flex-row">
+            {/* Left Column */}
+            <div className="md:w-2/3 p-4">
+              <h3 className="text-2xl text-gray-700 font-semibold px-2 my-3">
+                My Cart
+              </h3>
+              {cartItems && cartItems.length > 0 ? (
+                <>
+                  {cartItems.flatMap((cart) =>
+                    cart.items?.map((item) => (
+                      <>
+                        <div key={item.id} className="flex items-start mb-4">
+                          <img
+                            src={item.product.product_url}
+                            alt="Product"
+                            className="p-2 w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 object-contain object-top"
+                          />
+
+                          <div className="flex flex-col px-12">
+                            <h2 className="text-lg font-semibold text-gray-700">
+                              {item.product.product_name}
+                            </h2>
+                            <div className="flex items-center mt-2 text-gray-700">
+                              <span className="mr-2">Quantity:</span>
+                              <div className="flex ml-auto">
+                                <button
+                                  className="px-3 py-1 bg-gray-200 rounded-l"
+                                  onClick={() =>
+                                    handleDecrement(item.product.prod_slug)
+                                  }
+                                >
+                                  -
+                                </button>
+                                <input
+                                  type="text"
+                                  className="w-16 px-3 py-1 text-center focus:outline-none"
+                                  value={item.quantity}
+                                />
+                                <button
+                                  className="px-3 py-1 bg-gray-200 rounded-r"
+                                  onClick={() =>
+                                    handleIncrement(item.product?.prod_slug)
+                                  }
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                            <h2 className="text-gray-700 my-1">
+                              Price: Rs.{item.product.price}
+                            </h2>
+                          </div>
+                        </div>
+                        <div className="flex items-center px-8">
+                          <div className="flex justify-center">
+                            <Link className="border mr-2 p-2 text-red-500">
+                              <FaHeart />
+                            </Link>
+                            <Link className="border p-2 text-red-500">
+                              <FaTrash
+                                onClick={() => handleRemoveItem(item.id)}
+                              />
+                            </Link>
+                          </div>
+                          <h3 className="ml-auto text-sm lg:text-base text-gray-700 font-semibold">
+                            Sub-Total: Rs.{item.product.price * item.quantity}
+                          </h3>
+                        </div>
+                      </>
+                    ))
+                  )}
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center">
+                  <FaShoppingBasket className="text-4xl text-gray-400 mb-4" />
+                  <h2 className="text-xl text-gray-500 mb-4">
+                    Your cart is empty
+                  </h2>
+                </div>
+              )}
+
+              <hr className="my-2" />
+              {/* Add more product details here */}
+
+              <div className="mt-4 flex justify-end">
+                <Link to="/">
+                  <button className="text-sm text-gray-800 px-4 py-2 bg-[#103755] text-white rounded">
+                    Continue Shopping
+                  </button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="md:w-1/3 p-4 bg-[#FFFFFF]">
+              <div className="flex flex-col h-full">
+                <h3 className="text-2xl text-gray-700 mb-4">Order Summary</h3>
+                <hr className="w-full border-dotted border-gray-300 mb-4" />
+                {cartItems && cartItems.length > 0 ? (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700 font-semibold">
+                      Selected {cartItems.length} item(s) Price
+                    </span>
+                    <p className="text-right font-bold text-gray-700">
+                      Rs {subTotal}
+                    </p>
+                  </div>
+                ) : (
+                  <h1>No Data found</h1>
+                )}
+                <div className="flex justify-between my-2">
+                  <span className="text-gray-700 font-semibold">
+                    Delivery charge
+                  </span>
+                  <p className="text-right text-gray-700 font-bold">Rs 100</p>
+                </div>
+                <div className="flex items-center justify-center">
+                  <div className="border border-gray-300 rounded-lg p-4 max-w-sm w-full">
+                    <h3 className="text-center font-semibold text-gray-700 mb-4">
+                      VOUCHER CODE
+                    </h3>
+                    <div className="flex items-center">
+                      <input
+                        className="inputbox flex-grow mr-2 bg-primary border border-primary py-2 px-3 rounded-lg focus:outline-none"
+                        placeholder="Enter voucher code"
+                      />
+                      <button
+                        type="button"
+                        className="bg-red-600 btn-green hover:bg-red-700 text-white w-16 self-start disabled:cursor-not-allowed disabled:opacity-75 py-2 px-3 rounded-md"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between my-5">
+                  <span className="text-gray-700 font-semibold">
+                    Total payable
+                  </span>
+
+                  <p className="text-right text-gray-700 font-bold">
+                    Rs {total}
+                  </p>
+                </div>
+                <hr className="w-full border-dotted border-gray-300 mb-4" />
+
+                <button
+                  onClick={checkOutHandler}
+                  className="py-3 px-6 bg-red-600 hover:bg-red-700 text-white rounded mt-4 w-full"
+                >
+                  Proceed to Checkout
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  );
+};
+
+export default CartDetails;
+
+//  {
+//    cartItems && cartItems.length > 0 ? (
+//      cartItems[0].items?.map((item) => (
+//        <>
+//          <div className="flex items-start mb-4">
+//            <img
+//              src={item.product.product_url}
+//              alt="Product"
+//              className="p-2 w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 object-contain object-top"
+//            />
+
+//            <div className="flex flex-col px-12">
+//              <h2 className="text-lg font-semibold text-gray-700">
+//                {item.product.product_name}
+//              </h2>
+//              <div className="flex items-center mt-2 text-gray-700">
+//                <span className="mr-2">Quantity:</span>
+//                <div className="flex ml-auto">
+//                  <button
+//                    className="px-3 py-1 bg-gray-200 rounded-l"
+//                    onClick={() => handleDecrement(item.prod_slug)}
+//                  >
+//                    -
+//                  </button>
+//                  <input
+//                    type="text"
+//                    className="w-16 px-3 py-1 text-center focus:outline-none"
+//                    value={item.quantity}
+//                  />
+//                  <button
+//                    className="px-3 py-1 bg-gray-200 rounded-r"
+//                    onClick={() => handleIncrement(item.prod_slug)}
+//                  >
+//                    +
+//                  </button>
+//                </div>
+//              </div>
+//              <h2 className="text-gray-700 my-1">
+//                Price: Rs.{item.product.price}
+//              </h2>
+//            </div>
+//          </div>
+//          <div className="flex items-center px-8">
+//            <div className="flex justify-center">
+//              <Link className="border mr-2 p-2 text-red-500">
+//                <FaHeart />
+//              </Link>
+//              <Link className="border p-2 text-red-500">
+//                <FaTrash onClick={() => handleRemoveItem(item.prod_slug)} />
+//              </Link>
+//            </div>
+//            <h3 className="ml-auto text-sm lg:text-base text-gray-700 font-semibold">
+//              Sub-Total: Rs.{item.product.price * item.quantity}
+//            </h3>
+//          </div>
+//        </>
+//      ))
+//    ) : (
+//      <div className="flex flex-col items-center justify-center">
+//        <FaShoppingBasket className="text-4xl text-gray-400 mb-4" />
+//        <h2 className="text-xl text-gray-500 mb-4">Your cart is empty</h2>
+//      </div>
+//    );
+//  }
+
+
+import React, { useEffect, useState } from "react";
+import MetaData from "../metaData/MetaData";
+import SubHeader from "../../components/header/subHeader/SubHeader";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { addOrder, clearError } from "../../redux/features/orderSlice";
+import Spinner from "../../components/layout/spinner/Spinner";
+
+const Payment = () => {
+  const { user } = useSelector((state) => state.auth);
+  const { error, loading,shippings } = useSelector((state) => state.order);
+  console.log(shippings)
+  const { shippingInfo, items,cartItems } = useSelector((state) => state.cart);
+  console.log(cartItems)
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const orderInfo = JSON.parse(sessionStorage.getItem("orderInfo"));
+
+  const paymentData = {
+    amount: Math.round(orderInfo.totalPrice * 100),
+  };
+
+const order = {
+  user: user.name,
+  shipping_details: { id: shippings[0]?.id }, // Assuming 'shippings' is defined and contains the relevant 'id'.
+  items: cartItems.map((cart) =>
+    cart.items.map((item) => ({
+      product: item.product?.id,
+      quantity: item.quantity,
+    }))
+  ),
+  itemsPrice: orderInfo.subtotal,
+  taxPrice: orderInfo.tax,
+  shippingPrice: orderInfo.shippingCharges,
+  totalPrice: orderInfo.totalPrice,
+  payment_method: "cod",
+};
+
+
+
+
+  const handlePaymentMethodChange = (event) => {
+    setPaymentMethod(event.target.value);
+  };
+
+  const handleCompletePaid = (e) => {
+    e.preventDefault();
+
+    if (paymentMethod === "cash-on-delivery") {
+      dispatch(addOrder({ order, navigate, toast }));
+    } else if (paymentMethod === "online") {
+      // Perform online payment logic here
+      // You can redirect the user to the payment gateway or perform any necessary actions
+
+      // Example code to simulate a successful online payment
+
+      dispatch(addOrder({ order, navigate, toast }));
+    } else {
+      toast.error("There are some issues while processing payment!");
+    }
+  };
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(clearError());
+    }
+  }, [dispatch, error]);
+
+  return (
+    <>
+      <MetaData title="payment" />
+      <SubHeader />
+      <div className="container mx-auto px-8 py-8">
+        <h2 className="text-2xl font-semibold mb-4">Payment</h2>
+        <div className="max-w-md mx-auto">
+          <div className="mb-4">
+            <label className="block font-medium text-lg">
+              Select Payment Method:
+            </label>
+            <select
+              className="mt-2 block w-full border border-gray-300 py-2 px-3 rounded-md focus:outline-none"
+              value={paymentMethod}
+              onChange={handlePaymentMethodChange}
+            >
+              <option value="">Select an option</option>
+              <option value="cash-on-delivery">Cash on Delivery</option>
+              <option value="online">Online</option>
+            </select>
+          </div>
+
+          {paymentMethod === "cash-on-delivery" && (
+            <div className="bg-white shadow-md rounded-md p-6">
+              <h3 className="text-lg font-semibold mb-2">Cash on Delivery</h3>
+              <p className="text-gray-600">
+                Your full and final payment is:
+                <span className="font-bold">
+                  Rs. {orderInfo && orderInfo.totalPrice}
+                </span>
+              </p>
+              <p className="text-gray-600 mt-4">
+                Please keep the exact amount ready as our delivery person may
+                not carry change.
+              </p>
+              <button
+                className="bg-red-600 text-white rounded-md px-4 py-2 mt-4"
+                onClick={handleCompletePaid}
+              >
+                {loading && <Spinner />}Complete Paid
+              </button>
+            </div>
+          )}
+
+          {paymentMethod === "online" && (
+            <div className="bg-white shadow-md rounded-md p-6">
+              <h3 className="text-lg font-semibold mb-2">Online Payment</h3>
+              <p className="text-gray-600">
+                You will be redirected to the payment gateway for online
+                payment.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default Payment;
+
+
+import React, { useEffect, useState } from "react";
+import MetaData from "../metaData/MetaData";
+import CheckOutSteps from "../../components/checkOutSteps/CheckOutSteps";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import DatePicker from "react-datepicker";
+import SubHeader from "../../components/header/subHeader/SubHeader";
+import {
+  RiCalendarLine,
+  RiMapPinLine,
+  RiPhoneLine,
+  RiTimeLine,
+  RiUserLine,
+  RiUserSharedLine,
+} from "react-icons/ri";
+
+import Loader from "../../components/layout/loader/Loader";
+import {
+  clearError,
+  ordersDistrict,
+  shippingAdd,
+} from "../../redux/features/orderSlice";
+import GetShippingInfo from "./getShippingInfo/GetShippingInfo";
+
+const Pseudonym = [
+  "Home",
+  "Office",
+  "Friend",
+  "Cousin",
+  "School",
+  "College",
+  "Cafe",
+  "Others",
+];
+
+const ShippingDetails = () => {
+  const { error, loading, districts } = useSelector((state) => state.order);
+  const { user } = useSelector((state) => state.auth);
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const [fullName, setFullName] = useState("");
+  const [phoneNo, setPhoneNo] = useState("");
+  const [altPhoneNo, setAltPhoneNo] = useState("");
+  const [alies, setAlies] = useState("");
+  const [district, setDistrict] = useState("");
+  const [location, setLocation] = useState("");
+  const [landMark, setLandmark] = useState("");
+
+  const [showMore, setShowMore] = useState(true);
+
+  const [shippingError, setShippingError] = useState({});
+
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedTime, setSelectedTime] = useState(null);
+
+  const validatedForm = () => {
+    let newErrors = {};
+
+    // Trim and check if the fields are empty or contain only whitespace
+    if (!fullName || fullName.trim() === "") {
+      newErrors.fullName = "Full Name can't be empty!";
+    }
+    if (!phoneNo || phoneNo.trim() === "" || phoneNo.length !== 10) {
+      newErrors.phoneNo = "Phone number must be a 10-digit number!";
+    }
+    if (!altPhoneNo || altPhoneNo.trim() === "" || altPhoneNo.length !== 10) {
+      newErrors.altPhoneNo =
+        "Alternative Phone number must be a 10-digit number!";
+    }
+    if (!alies || alies.trim() === "") {
+      newErrors.alias = "Alias can't be empty!";
+    }
+    if (!district || district.trim() === "") {
+      newErrors.district = "District can't be empty!";
+    }
+    if (!location || location.trim() === "") {
+      newErrors.location = "Location can't be empty!";
+    }
+    if (!landMark || landMark.trim() === "") {
+      newErrors.landMark = "Landmark can't be empty!";
+    }
+
+    setShippingError(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const addDetails = () => {
+    setShowMore(false);
+  };
+
+  const shippingSubmit = (e) => {
+    e.preventDefault();
+    if (validatedForm()) {
+      const shippingValue = {
+        user: user.name,
+        fullName,
+        phoneNo,
+        altPhoneNo,
+        alies,
+        district,
+        location,
+        landMark,
+      };
+      dispatch(shippingAdd({ shippingValue, navigate, toast }));
+    } else {
+      return toast.error("Invalid Input!");
+    }
+  };
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(clearError());
+    }
+    dispatch(ordersDistrict());
+  }, [dispatch, error]);
+
+  return (
+    <>
+      <MetaData title="Shipping Details" />
+      <SubHeader />
+      <CheckOutSteps activeStep={0} />
+
+      {showMore ? (
+        <GetShippingInfo addDetails={addDetails} />
+      ) : (
+        <>
+          <div className="min-h-screen flex flex-col justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
+            <div className="sm:mx-auto sm:w-full sm:max-w-md">
+              <h2 className="text-xl font-bold text-gray-700">
+                Shipping Details
+              </h2>
+
+              <form className=" my-4" onSubmit={shippingSubmit}>
+                <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 mb-6">
+                  <div>
+                    <label
+                      htmlFor="fullName"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      <RiUserLine className="inline-block mr-2" />
+                      FullName
+                    </label>
+                    <input
+                      type="text"
+                      id="fullName"
+                      className="bg-gray-50 border border-gray-300 text-gray-00 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white focus:outline-none px-4"
+                      placeholder="e.g., John Doe"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                    />
+                    {shippingError && (
+                      <span className="text-red-600">
+                        {shippingError.fullName}
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="phoneNo"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      <RiPhoneLine className="inline-block mr-2" />
+                      Phone No
+                    </label>
+                    <input
+                      type="number"
+                      id="phoneNo"
+                      className="bg-gray-50 border border-gray-300 text-gray-00 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white focus:outline-none px-4"
+                      placeholder="e.g., +1 123-456-7890"
+                      value={phoneNo}
+                      onChange={(e) => setPhoneNo(e.target.value)}
+                    />
+                    {shippingError && (
+                      <span className="text-red-600">
+                        {shippingError.phoneNo}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="alterNativePhoneNo"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      <RiUserSharedLine className="inline-block mr-2" />
+                      AlterNative PhoneNo
+                    </label>
+                    <input
+                      type="number"
+                      id="alterNativePhoneNo"
+                      className="bg-gray-50 border border-gray-300 text-gray-00 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white focus:outline-none px-4"
+                      placeholder="e.g., +1 987-654-3210"
+                      value={altPhoneNo}
+                      onChange={(e) => setAltPhoneNo(e.target.value)}
+                    />
+                    {shippingError && (
+                      <span className="text-red-600">
+                        {shippingError.altPhoneNo}
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="alias"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Alias
+                    </label>
+                    <select
+                      id="alias"
+                      className="bg-gray-50 border border-gray-300 px-4 text-gray-700 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white focus:outline-none"
+                      value={alies}
+                      onChange={(e) => setAlies(e.target.value)}
+                    >
+                      <option value="">Select alias</option>
+                      {Pseudonym.map((aliasOption) => (
+                        <option key={aliasOption} value={aliasOption}>
+                          {aliasOption}
+                        </option>
+                      ))}
+                    </select>
+                    {shippingError && (
+                      <span className="text-red-600">
+                        {shippingError.alies}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="district"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      District
+                    </label>
+                    <select
+                      className="bg-gray-50 border border-gray-300 px-4 text-gray-700 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white focus:outline-none"
+                      value={district}
+                      onChange={(e) => setDistrict(e.target.value)}
+                    >
+                      <option value="">Select district</option>
+                      {districts &&
+                        districts.map((districtOption) => (
+                          <option
+                            key={districtOption.id}
+                            value={districtOption.district_name}
+                          >
+                            {districtOption.district_name}
+                          </option>
+                        ))}
+                    </select>
+                    {shippingError && (
+                      <span className="text-red-600">
+                        {shippingError.district}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="location"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      <RiMapPinLine className="inline-block mr-2" />
+                      Location
+                    </label>
+                    <input
+                      type="text"
+                      id="location"
+                      className="bg-gray-50 border border-gray-300 px-4 text-gray-00 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white focus:outline-none"
+                      placeholder="e.g., New York"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                    />
+                    {shippingError && (
+                      <span className="text-red-600">
+                        {shippingError.location}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* <div>
+                <label
+                  htmlFor="selectedDate"
+                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                >
+                  <RiCalendarLine className="inline-block mr-2" />
+                  Select Date
+                </label>
+                <DatePicker
+                  id="selectedDate"
+                  className="bg-gray-50 border cursor-pointer border-gray-300 text-gray-00 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white focus:outline-none px-4"
+                  selected={selectedDate}
+                  onChange={(date) => setSelectedDate(date)}
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="Select date"
+                  required
+                />
+              </div> */}
+
+                  {/* <div>
+                <label
+                  htmlFor="selectedTime"
+                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                >
+                  <RiTimeLine className="inline-block mr-2" />
+                  Select Time
+                </label>
+                <DatePicker
+                  id="selectedTime"
+                  showTimeSelect
+                  showTimeSelectOnly
+                  timeIntervals={15}
+                  timeCaption="Time"
+                  dateFormat="h:mm aa"
+                  className="bg-gray-50 border cursor-pointer border-gray-300 text-gray-00 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white focus:outline-none px-4"
+                  selected={selectedTime}
+                  onChange={(time) => setSelectedTime(time)}
+                  placeholderText="Select time"
+                  required
+                />
+              </div> */}
+                </div>
+                <div>
+                  <label
+                    htmlFor="landMark"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    <RiMapPinLine className="inline-block mr-2" />
+                    Nearest Landmark
+                  </label>
+                  <input
+                    type="text"
+                    id="landMark"
+                    className="bg-gray-50 border border-gray-300 text-gray-00 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white focus:outline-none px-4"
+                    placeholder="e.g., Central Park"
+                    value={landMark}
+                    onChange={(e) => setLandmark(e.target.value)}
+                  />
+                  {shippingError && (
+                    <span className="text-red-600">
+                      {shippingError.landMark}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-center mt-6">
+                  <button
+                    type="submit"
+                    className={`w-full bg-red-600 text-white py-2 px-4 border border-transparent rounded-md shadow-sm cursor-pointer focus:outline-none`}
+                  >
+                    {loading && <Loader />}Submit
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  );
+};
+
+export default ShippingDetails;
+
+
+
+
+
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import * as api from "../apiRoute/api";
+
+//create Order
+export const addOrder = createAsyncThunk(
+  "/order/add",
+  async ({ order, navigate, toast }, { rejectWithValue }) => {
+    try {
+      const response = await api.createOrder(order);
+      toast.success(response.data.message || "create order successFully!");
+      navigate("/payment/success");
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+//get all products list
+export const orderList = createAsyncThunk(
+  "/order/list",
+  async (__, { rejectWithValue }) => {
+    try {
+      const response = await api.orderList();
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+
+//single order
+export const OrderSingleDetail = createAsyncThunk(
+  "/order/single/details",
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.singleOrder(id);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+
+//getAllDistricts
+export const ordersDistrict = createAsyncThunk(
+  "/orders/district",
+  async (__, { rejectWithValue }) => {
+    try {
+      const response = await api.getDistrict();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+
+//add shippingDetails
+export const shippingAdd = createAsyncThunk(
+  "/shipping/add",
+  async ({ shippingValue, navigate, toast }, { rejectWithValue }) => {
+    try {
+      const response = await api.addShippingDetails(shippingValue);
+      toast.success(response.data.message || "add new shippingInfo!");
+      navigate("/confirm/order");
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+
+//getShippingDetails
+
+export const allShippingDetails = createAsyncThunk(
+  "/get/shippingInfo",
+  async (__, { rejectWithValue }) => {
+    try {
+      const response = await api.getShippingDetails();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+
+const orderSlice = createSlice({
+  name: "order",
+  initialState: {
+    orders: [],
+    districts: [],
+    shippings: [],
+    shipping: null,
+    order: null,
+    loading: false,
+    error: "",
+    message: "",
+  },
+
+  reducers: {
+    clearError: (state) => {
+      state.error = null;
+    },
+  },
+
+  extraReducers: (builder) => {
+    builder
+      .addCase(orderList.pending, (state) => {
+        state.pending = true;
+      })
+
+      .addCase(orderList.fulfilled, (state, action) => {
+        state.pending = false;
+        state.orders = action.payload.data;
+      })
+      .addCase(orderList.rejected, (state, action) => {
+        state.pending = false;
+        state.error = action.payload.message;
+      })
+      .addCase(addOrder.pending, (state, action) => {
+        state.loading = true;
+      })
+      .addCase(addOrder.fulfilled, (state, action) => {
+        state.loading = false;
+        state.order = action.payload;
+      })
+      .addCase(addOrder.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message;
+      })
+      .addCase(OrderSingleDetail.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(OrderSingleDetail.fulfilled, (state, action) => {
+        state.loading = false;
+        state.order = action.payload.data;
+      })
+      .addCase(OrderSingleDetail.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message;
+      })
+      .addCase(ordersDistrict.pending, (state, action) => {
+        state.loading = true;
+      })
+      .addCase(ordersDistrict.fulfilled, (state, action) => {
+        state.loading = false;
+        state.districts = action.payload.data;
+      })
+      .addCase(ordersDistrict.rejected, (state, action) => {
+        state.loading = false;
+        state.err = action.payload.msg;
+      })
+      .addCase(shippingAdd.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(shippingAdd.fulfilled, (state, action) => {
+        state.loading = false;
+        state.shipping = action.payload;
+      })
+      .addCase(shippingAdd.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload.message;
+      })
+      .addCase(allShippingDetails.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(allShippingDetails.fulfilled, (state, action) => {
+        state.loading = false;
+        state.shippings = action.payload.data;
+      })
+      .addCase(allShippingDetails.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload.message;
+      });
+  },
+});
+export const { clearError } = orderSlice.actions;
+export default orderSlice.reducer;
